@@ -32,8 +32,19 @@ dependencies:
   shared_preferences: ^2.0.6
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.9.0
   flutter_test:
     sdk: flutter
+
+# This is for launcher_icon. 
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: 'assets/pic.jpg'
+  adaptive_icon_background: '#ffffff'
+  adaptive_icon_foreground: 'assets/pic.jpg'
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

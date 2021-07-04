@@ -16,6 +16,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   var _taskcontroller;
+  List<Task> _tasks;
+  List<bool> _tasksdone;
 
   void savedata() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -26,28 +28,72 @@ class _HomeScreenState extends State<HomeScreen> {
     // );
     // _taskcontroller.text = '';
     // prefs.remove('task');
-    // Retrieving all data 
+    // Retrieving all data
     String tasks = prefs.getString('task');
     // Decoding and converting of tasks into a list.
     //If task is empty assign an empty list otherwise decode
     //the content and convert to list
-    List list = (tasks == null)? []:json.decode(tasks);
+    List list = (tasks == null) ? [] : json.decode(tasks);
     // print(list);
     // Adding a new task to the list of tasks
-    list.add(json.encode(newtask.getMap()));
-    print(list);
-    // Storing all task in the list to shared_preference 
-    prefs.setString('task', json.encode(list));
-    // Clearing the textfield 
+    list.add(
+      json.encode(
+        newtask.getMap(),
+      ),
+    );
+    // print(list);
+    // Storing all task in the list to shared_preference
+    prefs.setString(
+      'task',
+      json.encode(list),
+    );
+    // Clearing the textfield
     _taskcontroller.text = '';
-    // Removing the BottomSheet from the Screen 
+    // Removing the BottomSheet from the Screen
     Navigator.of(context).pop();
+
+    _getTasks();
+  }
+
+  void _getTasks() async {
+    _tasks = [];
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String tasks = prefs.getString('task');
+    List list = (tasks == null) ? [] : json.decode(tasks);
+    for (dynamic d in list) {
+      _tasks.add(
+        Task.fromMap(json.decode(d)),
+      );
+    }
+    // print(_tasks);
+    // setting all values of checkbox to false
+    _tasksdone = List.generate(_tasks.length, (index) => false);
+    setState(() {});
+  }
+
+  void updatePendingTasksList() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<Task> pendingList = [];
+    for (var i = 0; i < _tasks.length; i++)
+      if (!_tasksdone[i]) pendingList.add(_tasks[i]);
+
+    var pendingListEncoded = List.generate(
+      pendingList.length,
+      (i) => json.encode(
+        pendingList[i].getMap(),
+      ),
+    );
+    prefs.setString('task', json.encode(pendingListEncoded));
+
+    _getTasks();
   }
 
   @override
   void initState() {
     super.initState();
     _taskcontroller = TextEditingController();
+
+    _getTasks();
   }
 
   @override
@@ -64,10 +110,78 @@ class _HomeScreenState extends State<HomeScreen> {
           'Task Manager',
           // style: GoogleFonts.montserrat(),
         ),
+        actions: [
+          IconButton(
+            onPressed: updatePendingTasksList,
+            icon: Icon(Icons.save),
+          ),
+          IconButton(
+            onPressed: () async {
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              prefs.setString('task', json.encode([]),);
+
+              _getTasks();
+            },
+            icon: Icon(Icons.delete),
+          )
+        ],
       ),
-      body: Center(
-        child: Text('No Task added yet'),
-      ),
+      body: (_tasks == null)
+          ? Center(
+              child: Text('No Task added yet'),
+            )
+          : ListView(
+              controller: ScrollController(),
+              children: _tasks
+                  .map((e) => Container(
+                        height: 50.0,
+                        width: MediaQuery.of(context).size.width,
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 10.0, vertical: 5.0),
+                        padding: const EdgeInsets.only(left: 10.0),
+                        alignment: Alignment.centerLeft,
+                        decoration: BoxDecoration(
+                          color: Colors.blue[200],
+                          borderRadius: BorderRadius.circular(5.0),
+                          border: Border.all(color: Colors.black, width: 0.5),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(e.task),
+                            Checkbox(
+                              value: _tasksdone[_tasks.indexOf(e)],
+                              key: GlobalKey(),
+                              onChanged: (val) {
+                                setState(() {
+                                  _tasksdone[_tasks.indexOf(e)] = val;
+                                });
+                              },
+                            )
+                          ],
+                        ),
+                      ))
+                  .toList(),
+            ),
+      // : Column(
+      //     children: ListView()  _tasks
+      //         .map((e) => Container(
+      //               height: 70.0,
+      //               width: MediaQuery.of(context).size.width,
+      //               margin: const EdgeInsets.symmetric(horizontal: 10,vertical: 5.0),
+      //               padding: const EdgeInsets.only(left: 10.0),
+      //               alignment: Alignment.centerLeft,
+      //               child: Text(e.task),
+      //               decoration: BoxDecoration(
+      //                 borderRadius: BorderRadius.circular(5.0),
+      //                 border: Border.all(
+      //                   color: Colors.black,
+      //                   width: 0.5,
+      //                 )
+      //               ),
+      //             )    )
+      //         .toList(),
+      //     ),
       floatingActionButton: FloatingActionButton(
         child: Icon(
           Icons.add,
